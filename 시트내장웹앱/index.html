@@ -208,6 +208,19 @@
       </div>
       <label class="chk"><input type="checkbox" id="onlyPrice" onchange="render()">단가 있는 것만</label>
     </div>
+    <div class="filters" style="margin-top:-4px;">
+      <span style="font-size:12.5px; font-weight:700; color:var(--muted);">💰 예산 필터</span>
+      <select id="bgType" onchange="render()">
+        <option value="">유형 선택…</option>
+      </select>
+      <select id="bgBasis" onchange="render()">
+        <option value="견적">공유가 기준</option>
+        <option value="실비">실비 기준</option>
+      </select>
+      <input id="bgMax" type="number" min="0" placeholder="예산 (만원)" oninput="render()"
+        style="width:120px; font:inherit; font-size:13.5px; padding:9px 12px; border-radius:10px; border:1px solid var(--border); background:var(--card); color:var(--ink);">
+      <span class="hint">유형+예산을 넣으면 그 금액 이하 채널만 싼 순으로 보여요</span>
+    </div>
     <div class="count" id="count"></div>
     <div class="grid" id="grid"></div>
   </section>
@@ -330,7 +343,7 @@
 
 <script>
 const RAWDATA = [];
-const PRICE_TYPES = ["릴스","쇼츠","틱톡","미러링","피드","BDC","기획PPL","단순PPL","2차/공동"];
+const PRICE_TYPES = ["릴스","쇼츠","틱톡","미러링","피드","BDC","기획PPL","단순PPL","매거진","파워페이지","2차/공동"];
 const LS_KEY = "danga_custom_v1";
 let pf = "all";
 
@@ -450,9 +463,13 @@ function render(){
   const rawQ=(document.getElementById('q').value||"").trim();
   const camp=document.getElementById('campaign').value;
   const only=document.getElementById('onlyPrice').checked;
+  const bgT=document.getElementById('bgType').value;
+  const bgB=document.getElementById('bgBasis').value;
+  const bgM=parseFloat(document.getElementById('bgMax').value);
+  const budgetOn = bgT && !isNaN(bgM) && bgM>0;
 
-  // 검색 전에는 결과를 띄우지 않는다 (탭 선택이나 필터가 있으면 예외)
-  if(!rawQ && !camp && !only && pf==="all"){
+  // 검색 전에는 결과를 띄우지 않는다 (탭 선택·필터·예산이 있으면 예외)
+  if(!rawQ && !camp && !only && pf==="all" && !budgetOn){
     document.getElementById('count').innerHTML="";
     document.getElementById('grid').innerHTML=
       `<div class="empty">채널명을 검색하세요 — 여러 채널은 쉼표로 구분
@@ -484,11 +501,25 @@ function render(){
       return (ia<0?99:ia)-(ib<0?99:ib);
     });
   }
-  document.getElementById('count').innerHTML = `<b>${list.length}</b>건`;
+  // 예산 필터: 선택한 유형·기준의 값이 예산 이하인 채널만, 싼 순 정렬
+  let budgetNote="";
+  if(budgetOn){
+    list=list.map(ch=>{
+      const v=manValue(ch[bgT+"_"+bgB]);
+      return {ch, v};
+    }).filter(x=>x.v!=null && x.v<=bgM)
+      .sort((a,b)=>a.v-b.v)
+      .map(x=>x.ch);
+    budgetNote=` · ${esc(bgT)} ${bgB==="견적"?"공유가":"실비"} ${bgM.toLocaleString("ko-KR")}만 이하`;
+  }
+  document.getElementById('count').innerHTML = `<b>${list.length}</b>건${budgetNote}`;
   document.getElementById('grid').innerHTML = list.length
     ? list.map(card).join("")
     : `<div class="empty" style="grid-column:1/-1">검색 결과가 없어요.</div>`;
 }
+// 예산 필터 유형 옵션 채우기
+(function(){ const s=document.getElementById('bgType');
+  s.innerHTML='<option value="">유형 선택…</option>'+PRICE_TYPES.filter(t=>t!=="2차/공동").map(t=>`<option>${t}</option>`).join(""); })();
 
 /* ---------- tabs / theme ---------- */
 function showTab(t){
@@ -543,6 +574,7 @@ const BULK_MAP = {
   "미러링채널(yt/ig/tt/기타)":"미러링채널","미러링채널":"미러링채널",
   "피드":"피드_견적","피드실비":"피드_실비","bdc":"BDC_견적","bdc실비":"BDC_실비",
   "기획ppl":"기획PPL_견적","기획ppl실비":"기획PPL_실비","단순ppl":"단순PPL_견적","단순ppl실비":"단순PPL_실비",
+  "매거진":"매거진_견적","매거진실비":"매거진_실비","파워페이지":"파워페이지_견적","파워페이지실비":"파워페이지_실비",
   "2차라이선스활용":"2차/공동_견적","공동작업자":"공동작업자","2차라이선스&공동작업자실비":"2차/공동_실비",
   "소속":"소속","담당자":"담당자","담당자연락처":"연락처","담당자이메일":"이메일",
   "컨택포인트":"컨택포인트","상품소개서":"상품소개서","비고":"비고"
@@ -559,7 +591,7 @@ function mapHeader(h){
   if(/2차|라이선스/.test(n)) return /실비/.test(n) ? "2차/공동_실비" : "2차/공동_견적";
   if(/공동작업자/.test(n)) return "공동작업자";
   // 유형별 단가: '실비' 포함 여부로 공유가/실비 구분
-  const types=[["기획ppl","기획PPL"],["단순ppl","단순PPL"],["bdc","BDC"],["릴스","릴스"],["쇼츠","쇼츠"],["틱톡","틱톡"],["미러링","미러링"],["피드","피드"]];
+  const types=[["파워페이지","파워페이지"],["파워페이","파워페이지"],["매거진","매거진"],["기획ppl","기획PPL"],["단순ppl","단순PPL"],["bdc","BDC"],["릴스","릴스"],["쇼츠","쇼츠"],["틱톡","틱톡"],["미러링","미러링"],["피드","피드"]];
   for(const [pat,key] of types){
     if(n.includes(pat)) return /실비|원가|내부/.test(n) ? key+"_실비" : key+"_견적";
   }

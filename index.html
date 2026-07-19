@@ -207,6 +207,19 @@
       </div>
       <label class="chk"><input type="checkbox" id="onlyPrice" onchange="render()">단가 있는 것만</label>
     </div>
+    <div class="filters" style="margin-top:-4px;">
+      <span style="font-size:12.5px; font-weight:700; color:var(--muted);">💰 예산 필터</span>
+      <select id="bgType" onchange="render()">
+        <option value="">유형 선택…</option>
+      </select>
+      <select id="bgBasis" onchange="render()">
+        <option value="견적">공유가 기준</option>
+        <option value="실비">실비 기준</option>
+      </select>
+      <input id="bgMax" type="number" min="0" placeholder="예산 (만원)" oninput="render()"
+        style="width:120px; font:inherit; font-size:13.5px; padding:9px 12px; border-radius:10px; border:1px solid var(--border); background:var(--card); color:var(--ink);">
+      <span class="hint">유형+예산을 넣으면 그 금액 이하 채널만 싼 순으로 보여요</span>
+    </div>
     <div class="count" id="count"></div>
     <div class="grid" id="grid"></div>
   </section>
@@ -328,8 +341,8 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const RAWDATA = [{"캠페인":"데모(7월)","채널명":"나나","구분":"IG","링크":"https://www.instagram.com/demo_nana","릴스_견적":"900만","릴스_실비":"700만","피드_실비":"300만","소속":"데모MCN","담당자":"김담당","연락처":"010-0000-0001","이메일":"demo1@example.com"},{"캠페인":"데모(7월)","채널명":"나나씨","구분":"YT","링크":"https://www.youtube.com/@demo_nanassi","쇼츠_견적":"1,200만","쇼츠_실비":"1,000만","BDC_실비":"3,000만","컨택포인트":"DM"},{"캠페인":"데모(7월)","채널명":"말랑콩떡 이진","구분":"IG","링크":"https://www.instagram.com/demo_leejin","릴스_실비":"500만","미러링채널":"IG, YT","미러링_실비":"800만","소속":"가상에이전시","담당자":"이담당","이메일":"demo2@example.com"},{"캠페인":"데모(7월)","채널명":"데모쿡","구분":"IG","링크":"https://www.instagram.com/demo_cook","릴스_견적":"600만","릴스_실비":"450만","피드_견적":"200만","피드_실비":"150만","2차/공동_견적":"2차 활용 1개월 100만 (데모)","이메일":"demo3@example.com"},{"캠페인":"데모(7월)","채널명":"데모트래블","구분":"YT","링크":"https://www.youtube.com/@demo_travel","BDC_견적":"5,000만","BDC_실비":"4,200만","기획PPL_실비":"2,500만","연락처":"010-0000-0002","이메일":"demo4@example.com"},{"캠페인":"데모(7월)","채널명":"데모피트","구분":"YT","링크":"https://www.youtube.com/@demo_fit","쇼츠_실비":"800만","미러링채널":"YT, IG","미러링_실비":"1,100만","비고":"데모 데이터"},{"캠페인":"데모(7월)","채널명":"데모홈","구분":"IG","링크":"https://www.instagram.com/demo_home"},{"캠페인":"데모(7월)","채널명":"데모뷰티","구분":"IG","링크":"https://www.instagram.com/demo_beauty","릴스_견적":"400만"},{"캠페인":"데모(7월)","채널명":"데모키즈","구분":"IG","링크":"https://www.instagram.com/demo_kids","단순PPL_실비":"350만","컨택포인트":"demo5@example.com"},{"캠페인":"데모(7월)","채널명":"데모게임","구분":"YT","링크":"https://www.youtube.com/@demo_game"}];
-const PRICE_TYPES = ["릴스","쇼츠","틱톡","미러링","피드","BDC","기획PPL","단순PPL","2차/공동"];
+const RAWDATA = [{"캠페인":"데모(7월)","채널명":"나나","구분":"IG","링크":"https://www.instagram.com/demo_nana","릴스_견적":"900만","릴스_실비":"700만","피드_실비":"300만","소속":"데모MCN","담당자":"김담당","연락처":"010-0000-0001","이메일":"demo1@example.com"},{"캠페인":"데모(7월)","채널명":"나나씨","구분":"YT","링크":"https://www.youtube.com/@demo_nanassi","쇼츠_견적":"1,200만","쇼츠_실비":"1,000만","BDC_실비":"3,000만","컨택포인트":"DM"},{"캠페인":"데모(7월)","채널명":"말랑콩떡 이진","구분":"IG","링크":"https://www.instagram.com/demo_leejin","릴스_실비":"500만","미러링채널":"IG, YT","미러링_실비":"800만","소속":"가상에이전시","담당자":"이담당","이메일":"demo2@example.com"},{"캠페인":"데모(7월)","채널명":"데모쿡","구분":"IG","링크":"https://www.instagram.com/demo_cook","릴스_견적":"600만","릴스_실비":"450만","피드_견적":"200만","피드_실비":"150만","2차/공동_견적":"2차 활용 1개월 100만 (데모)","이메일":"demo3@example.com"},{"캠페인":"데모(7월)","채널명":"데모트래블","구분":"YT","링크":"https://www.youtube.com/@demo_travel","BDC_견적":"5,000만","BDC_실비":"4,200만","기획PPL_실비":"2,500만","연락처":"010-0000-0002","이메일":"demo4@example.com"},{"캠페인":"데모(7월)","채널명":"데모피트","구분":"YT","링크":"https://www.youtube.com/@demo_fit","쇼츠_실비":"800만","미러링채널":"YT, IG","미러링_실비":"1,100만","비고":"데모 데이터"},{"캠페인":"데모(7월)","채널명":"데모홈","구분":"IG","링크":"https://www.instagram.com/demo_home","매거진_견적":"300만","매거진_실비":"200만","파워페이지_견적":"500만","파워페이지_실비":"380만"},{"캠페인":"데모(7월)","채널명":"데모뷰티","구분":"IG","링크":"https://www.instagram.com/demo_beauty","릴스_견적":"400만"},{"캠페인":"데모(7월)","채널명":"데모키즈","구분":"IG","링크":"https://www.instagram.com/demo_kids","단순PPL_실비":"350만","컨택포인트":"demo5@example.com"},{"캠페인":"데모(7월)","채널명":"데모게임","구분":"YT","링크":"https://www.youtube.com/@demo_game"}];
+const PRICE_TYPES = ["릴스","쇼츠","틱톡","미러링","피드","BDC","기획PPL","단순PPL","매거진","파워페이지","2차/공동"];
 const LS_KEY = "danga_custom_v1";
 let pf = "all";
 
@@ -455,9 +468,13 @@ function render(){
   const rawQ=(document.getElementById('q').value||"").trim();
   const camp=document.getElementById('campaign').value;
   const only=document.getElementById('onlyPrice').checked;
+  const bgT=document.getElementById('bgType').value;
+  const bgB=document.getElementById('bgBasis').value;
+  const bgM=parseFloat(document.getElementById('bgMax').value);
+  const budgetOn = bgT && !isNaN(bgM) && bgM>0;
 
-  // 검색 전에는 결과를 띄우지 않는다 (탭 선택이나 필터가 있으면 예외)
-  if(!rawQ && !camp && !only && pf==="all"){
+  // 검색 전에는 결과를 띄우지 않는다 (탭 선택·필터·예산이 있으면 예외)
+  if(!rawQ && !camp && !only && pf==="all" && !budgetOn){
     document.getElementById('count').innerHTML="";
     document.getElementById('grid').innerHTML=
       `<div class="empty">채널명을 검색하세요 — 여러 채널은 쉼표로 구분
@@ -489,11 +506,25 @@ function render(){
       return (ia<0?99:ia)-(ib<0?99:ib);
     });
   }
-  document.getElementById('count').innerHTML = `<b>${list.length}</b>건`;
+  // 예산 필터: 선택한 유형·기준의 값이 예산 이하인 채널만, 싼 순 정렬
+  let budgetNote="";
+  if(budgetOn){
+    list=list.map(ch=>{
+      const v=manValue(ch[bgT+"_"+bgB]);
+      return {ch, v};
+    }).filter(x=>x.v!=null && x.v<=bgM)
+      .sort((a,b)=>a.v-b.v)
+      .map(x=>x.ch);
+    budgetNote=` · ${esc(bgT)} ${bgB==="견적"?"공유가":"실비"} ${bgM.toLocaleString("ko-KR")}만 이하`;
+  }
+  document.getElementById('count').innerHTML = `<b>${list.length}</b>건${budgetNote}`;
   document.getElementById('grid').innerHTML = list.length
     ? list.map(card).join("")
     : `<div class="empty" style="grid-column:1/-1">검색 결과가 없어요.</div>`;
 }
+// 예산 필터 유형 옵션 채우기
+(function(){ const s=document.getElementById('bgType');
+  s.innerHTML='<option value="">유형 선택…</option>'+PRICE_TYPES.filter(t=>t!=="2차/공동").map(t=>`<option>${t}</option>`).join(""); })();
 
 /* ---------- tabs / theme ---------- */
 function showTab(t){
@@ -548,6 +579,7 @@ const BULK_MAP = {
   "미러링채널(yt/ig/tt/기타)":"미러링채널","미러링채널":"미러링채널",
   "피드":"피드_견적","피드실비":"피드_실비","bdc":"BDC_견적","bdc실비":"BDC_실비",
   "기획ppl":"기획PPL_견적","기획ppl실비":"기획PPL_실비","단순ppl":"단순PPL_견적","단순ppl실비":"단순PPL_실비",
+  "매거진":"매거진_견적","매거진실비":"매거진_실비","파워페이지":"파워페이지_견적","파워페이지실비":"파워페이지_실비",
   "2차라이선스활용":"2차/공동_견적","공동작업자":"공동작업자","2차라이선스&공동작업자실비":"2차/공동_실비",
   "소속":"소속","담당자":"담당자","담당자연락처":"연락처","담당자이메일":"이메일",
   "컨택포인트":"컨택포인트","상품소개서":"상품소개서","비고":"비고"
@@ -564,7 +596,7 @@ function mapHeader(h){
   if(/2차|라이선스/.test(n)) return /실비/.test(n) ? "2차/공동_실비" : "2차/공동_견적";
   if(/공동작업자/.test(n)) return "공동작업자";
   // 유형별 단가: '실비' 포함 여부로 공유가/실비 구분
-  const types=[["기획ppl","기획PPL"],["단순ppl","단순PPL"],["bdc","BDC"],["릴스","릴스"],["쇼츠","쇼츠"],["틱톡","틱톡"],["미러링","미러링"],["피드","피드"]];
+  const types=[["파워페이지","파워페이지"],["파워페이","파워페이지"],["매거진","매거진"],["기획ppl","기획PPL"],["단순ppl","단순PPL"],["bdc","BDC"],["릴스","릴스"],["쇼츠","쇼츠"],["틱톡","틱톡"],["미러링","미러링"],["피드","피드"]];
   for(const [pat,key] of types){
     if(n.includes(pat)) return /실비|원가|내부/.test(n) ? key+"_실비" : key+"_견적";
   }
