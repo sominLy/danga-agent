@@ -294,9 +294,9 @@
         </fieldset>
 
         <fieldset class="fs internal">
-          <legend>실비 (유형별)</legend>
+          <legend>단가 (유형별 — 공유가 · 실비)</legend>
           <div id="priceInputs"></div>
-          <p class="hint" style="margin:10px 0 0;">금액은 <b>만원</b> 단위로 적어도 됩니다(예: <b>1600만</b> 또는 <b>1,600만원</b>). 고객사 보고가는 여기에 마진을 얹어 별도 시트로 관리합니다.</p>
+          <p class="hint" style="margin:10px 0 0;">금액은 <b>만원</b> 단위로 적어도 됩니다(예: <b>1600만</b> 또는 <b>1,600만원</b>). 공유가 = 고객사 보고 단가, 실비 = 내부 실제 지급가. 한쪽만 있어도 저장됩니다.</p>
         </fieldset>
 
         <fieldset class="fs internal">
@@ -505,9 +505,16 @@ function toggleTheme(){
 
 /* ---------- input form ---------- */
 function buildPriceInputs(){
-  document.getElementById('priceInputs').innerHTML = PRICE_TYPES.map(t=>
-    `<div class="price-in" style="margin-bottom:8px;"><span class="lab">${t}</span>
-       <input name="price_${t}" placeholder="실비 (예: 900만)"></div>`).join("");
+  document.getElementById('priceInputs').innerHTML =
+    `<div class="price-in" style="margin-bottom:4px; grid-template-columns:96px 1fr 1fr;">
+       <span></span>
+       <span style="font-size:11px; font-weight:800; color:var(--accent-ink);">고객사 공유가</span>
+       <span style="font-size:11px; font-weight:800; color:var(--good);">실비 (내부)</span>
+     </div>`+
+    PRICE_TYPES.map(t=>
+    `<div class="price-in" style="margin-bottom:8px; grid-template-columns:96px 1fr 1fr;"><span class="lab">${t}</span>
+       <input name="quote_${t}" placeholder="예: 1,000만">
+       <input name="price_${t}" placeholder="예: 800만"></div>`).join("");
 }
 function resetForm(){ document.getElementById('form').reset(); }
 
@@ -516,7 +523,10 @@ function saveForm(e){
   const f=e.target, obj={};
   ["채널명","구분","링크","캠페인","소속","담당자","연락처","이메일","컨택포인트","비고"]
     .forEach(k=>obj[k]=(f.elements[k]?.value||"").trim());
-  PRICE_TYPES.forEach(t=>{ const v=(f.elements['price_'+t]?.value||"").trim(); if(v) obj[t+"_실비"]=v; });
+  PRICE_TYPES.forEach(t=>{
+    const q=(f.elements['quote_'+t]?.value||"").trim(); if(q) obj[t+"_견적"]=q;   // 고객사 공유가
+    const v=(f.elements['price_'+t]?.value||"").trim(); if(v) obj[t+"_실비"]=v;   // 내부 실비
+  });
   obj._custom=true;
   const arr=loadCustom(); arr.unshift(obj); saveCustom(arr);
   f.reset(); toast(`저장됐어요 · ${obj.채널명}`); buildCampaignOptions(); showTab('search');
@@ -671,7 +681,7 @@ function parseMail(){
 /* ---------- export ---------- */
 function exportCsv(){
   const cols=["제품명","월","채널명","구분","링크",
-    ...PRICE_TYPES.map(t=>t+"_실비"),"소속","담당자","연락처","이메일","컨택포인트","비고"];
+    ...PRICE_TYPES.flatMap(t=>[t+"_견적",t+"_실비"]),"소속","담당자","연락처","이메일","컨택포인트","비고"];
   const rows=allData().filter(c=>c.채널명);
   const csv=[cols.join(",")].concat(rows.map(r=>{
     const cp=campParts(r.캠페인);
