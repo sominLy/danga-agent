@@ -1,0 +1,827 @@
+<style>
+  :root{
+    --bg:#F6F7F9; --card:#FFFFFF; --card-2:#FBFBFD; --border:#E4E6EC;
+    --ink:#1B1D24; --muted:#6A6E7A; --faint:#9AA0AC;
+    --accent:#3D53C4; --accent-soft:rgba(61,83,196,.09); --accent-ink:#3D53C4;
+    --good:#1F9D5B; --good-soft:rgba(31,157,91,.12);
+    --warn:#B07A00; --warn-soft:rgba(176,122,0,.13);
+    --bad:#D2453D; --bad-soft:rgba(210,69,61,.11);
+    --lock:#5B6472; --lock-soft:rgba(91,100,114,.12);
+    --shadow:0 1px 2px rgba(20,22,32,.04),0 6px 18px rgba(20,22,32,.05);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#111219; --card:#1B1D25; --card-2:#20222B; --border:#2C2F3A;
+      --ink:#E9EAF0; --muted:#9AA0AE; --faint:#6C7280;
+      --accent:#8E9BF2; --accent-soft:rgba(142,155,242,.14); --accent-ink:#AEB8F7;
+      --good:#4FC98A; --good-soft:rgba(79,201,138,.15);
+      --warn:#E0AE4A; --warn-soft:rgba(224,174,74,.15);
+      --bad:#F0776E; --bad-soft:rgba(240,119,110,.15);
+      --lock:#9AA0AE; --lock-soft:rgba(154,160,174,.14);
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 22px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#F6F7F9; --card:#FFFFFF; --card-2:#FBFBFD; --border:#E4E6EC;
+    --ink:#1B1D24; --muted:#6A6E7A; --faint:#9AA0AC;
+    --accent:#3D53C4; --accent-soft:rgba(61,83,196,.09); --accent-ink:#3D53C4;
+    --good:#1F9D5B; --good-soft:rgba(31,157,91,.12);
+    --warn:#B07A00; --warn-soft:rgba(176,122,0,.13);
+    --bad:#D2453D; --bad-soft:rgba(210,69,61,.11);
+    --lock:#5B6472; --lock-soft:rgba(91,100,114,.12);
+    --shadow:0 1px 2px rgba(20,22,32,.04),0 6px 18px rgba(20,22,32,.05);
+  }
+  :root[data-theme="dark"]{
+    --bg:#111219; --card:#1B1D25; --card-2:#20222B; --border:#2C2F3A;
+    --ink:#E9EAF0; --muted:#9AA0AE; --faint:#6C7280;
+    --accent:#8E9BF2; --accent-soft:rgba(142,155,242,.14); --accent-ink:#AEB8F7;
+    --good:#4FC98A; --good-soft:rgba(79,201,138,.15);
+    --warn:#E0AE4A; --warn-soft:rgba(224,174,74,.15);
+    --bad:#F0776E; --bad-soft:rgba(240,119,110,.15);
+    --lock:#9AA0AE; --lock-soft:rgba(154,160,174,.14);
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 22px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:"Pretendard","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans KR",sans-serif;
+    line-height:1.55; -webkit-font-smoothing:antialiased;
+    font-feature-settings:"tnum";
+  }
+  .tnum{font-variant-numeric:tabular-nums;}
+  /* ---------- top bar ---------- */
+  header.top{
+    position:sticky; top:0; z-index:20; background:color-mix(in srgb,var(--bg) 88%,transparent);
+    backdrop-filter:blur(10px); border-bottom:1px solid var(--border);
+  }
+  .top-in{max-width:1120px; margin:0 auto; padding:12px 20px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;}
+  .brand{display:flex; align-items:baseline; gap:9px;}
+  .brand h1{font-size:17px; font-weight:800; letter-spacing:-.01em; margin:0;}
+  .brand .sub{font-size:12px; color:var(--muted);}
+  .lockbadge{display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:700;
+    color:var(--lock); background:var(--lock-soft); border-radius:20px; padding:3px 10px;}
+  .spacer{flex:1;}
+  .tabs{display:inline-flex; background:var(--card-2); border:1px solid var(--border); border-radius:10px; padding:3px;}
+  .tabs button{font:inherit; font-size:13.5px; font-weight:700; color:var(--muted); background:none; border:0;
+    padding:6px 15px; border-radius:7px; cursor:pointer;}
+  .tabs button[aria-selected="true"]{background:var(--accent); color:#fff;}
+  .icon-btn{font:inherit; font-size:15px; background:var(--card-2); border:1px solid var(--border); color:var(--ink);
+    width:34px; height:34px; border-radius:9px; cursor:pointer;}
+  .wrap{max-width:1120px; margin:0 auto; padding:22px 20px 80px;}
+  /* ---------- filters ---------- */
+  .filters{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:16px;}
+  .search{flex:1; min-width:240px; position:relative;}
+  .search input{width:100%; font:inherit; font-size:15px; padding:11px 14px 11px 38px; border-radius:11px;
+    border:1px solid var(--border); background:var(--card); color:var(--ink);}
+  .search::before{content:"⌕"; position:absolute; left:13px; top:50%; transform:translateY(-50%); color:var(--faint); font-size:18px;}
+  select,.seg{font:inherit; font-size:13.5px; padding:9px 12px; border-radius:10px; border:1px solid var(--border);
+    background:var(--card); color:var(--ink); cursor:pointer;}
+  .seg{display:inline-flex; gap:2px; padding:3px;}
+  .seg button{font:inherit; font-size:13px; font-weight:600; border:0; background:none; color:var(--muted);
+    padding:6px 12px; border-radius:8px; cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--accent-soft); color:var(--accent-ink);}
+  .chk{display:inline-flex; align-items:center; gap:7px; font-size:13px; color:var(--muted); cursor:pointer; user-select:none;}
+  .chk input{accent-color:var(--accent); width:16px; height:16px;}
+  .markup{display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--muted);}
+  .markup input[type=number]{width:52px; font:inherit; font-size:13px; padding:6px 8px; border-radius:8px;
+    border:1px solid var(--border); background:var(--card); color:var(--ink); text-align:right;}
+  .count{font-size:13px; color:var(--muted); margin-bottom:12px;}
+  .count b{color:var(--ink);}
+  /* ---------- 결과 행 (채널 | 단가 | 컨택) ---------- */
+  .grid{display:flex; flex-direction:column; gap:10px;}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px 18px;
+    box-shadow:var(--shadow); display:grid; grid-template-columns:200px 1fr 230px; gap:8px 22px; align-items:start;}
+  .ident{min-width:0;}
+  .ch-name{font-size:16.5px; font-weight:800; letter-spacing:-.01em; margin:0 0 4px; word-break:keep-all; line-height:1.3;}
+  .ch-meta{display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:6px;}
+  .pf{font-size:10.5px; font-weight:800; border-radius:6px; padding:2px 7px; letter-spacing:.03em;}
+  .pf.IG{background:var(--accent-soft); color:var(--accent-ink);}
+  .pf.YT{background:var(--bad-soft); color:var(--bad);}
+  .pf.ETC{background:var(--lock-soft); color:var(--lock);}
+  .pill{font-size:10.5px; font-weight:700; border-radius:20px; padding:2px 9px;}
+  .pill.good{background:var(--good-soft); color:var(--good);}
+  .pill.warn{background:var(--warn-soft); color:var(--warn);}
+  .pill.bad{background:var(--bad-soft); color:var(--bad);}
+  .pill.neut{background:var(--lock-soft); color:var(--lock);}
+  .ch-link{color:var(--muted); text-decoration:none; font-size:12px; word-break:break-all; line-height:1.4; display:inline-block;}
+  .ch-link:hover{color:var(--accent-ink); text-decoration:underline;}
+  /* 단가: 유형별 칸, 실비가 주인공 */
+  .pgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(148px,1fr)); gap:10px 16px;}
+  .pitem{display:flex; flex-direction:column; gap:2px; padding:8px 10px; background:var(--card-2); border-radius:9px;}
+  .pitem .pt{font-size:11px; font-weight:700; color:var(--muted); letter-spacing:.02em; display:flex; align-items:center; gap:5px;}
+  .pitem .pv{font-size:16px; font-weight:800; letter-spacing:-.01em; line-height:1.25; word-break:keep-all;}
+  .pitem .pv.long{font-size:12.5px; font-weight:600; color:var(--ink);}
+  .pitem .orig{font-size:11.5px; color:var(--faint); text-decoration:line-through;}
+  .ptag{font-size:9.5px; font-weight:800; border-radius:4px; padding:1px 5px; letter-spacing:.04em;}
+  .ptag.sb{background:var(--good-soft); color:var(--good);}
+  .ptag.est{background:var(--accent-soft); color:var(--accent-ink);}
+  .noprice{align-self:center; font-size:12.5px; color:var(--faint);}
+  /* 컨택: 클릭=복사 */
+  .contact{background:var(--card-2); border-radius:10px; padding:10px 12px; font-size:12.5px; display:flex; flex-direction:column; gap:4px;}
+  .contact .hd{font-size:10.5px; font-weight:800; color:var(--faint); letter-spacing:.05em; margin-bottom:2px;}
+  .contact .row{display:flex; gap:8px; align-items:baseline;}
+  .contact .k{color:var(--faint); min-width:42px; flex-shrink:0; font-size:11.5px;}
+  .contact .v{color:var(--ink); word-break:break-all;}
+  .contact .v.copy{cursor:pointer; border-bottom:1px dashed var(--border);}
+  .contact .v.copy:hover{color:var(--accent-ink); border-bottom-color:var(--accent-ink);}
+  details.more{grid-column:1/-1; margin-top:2px;}
+  details.more summary{font-size:12px; color:var(--muted); cursor:pointer; list-style:none;}
+  details.more summary::-webkit-details-marker{display:none;}
+  details.more summary::before{content:"▸ "; color:var(--faint);}
+  details.more[open] summary::before{content:"▾ ";}
+  details.more .body{font-size:12.5px; color:var(--muted); margin-top:7px; white-space:pre-wrap; line-height:1.55;
+    background:var(--card-2); border-radius:9px; padding:10px 12px;}
+  .empty{text-align:center; color:var(--muted); padding:80px 20px 60px; font-size:14.5px; line-height:2;}
+  .empty .ex{display:inline-flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:10px;}
+  .empty .ex button{font:inherit; font-size:13px; font-weight:600; color:var(--accent-ink); background:var(--accent-soft);
+    border:0; border-radius:20px; padding:6px 14px; cursor:pointer;}
+  @media (max-width:820px){
+    .card{grid-template-columns:1fr;}
+    .contact{margin-top:2px;}
+  }
+  /* ---------- form ---------- */
+  .form-wrap{max-width:760px;}
+  .paste{background:var(--card); border:1px dashed var(--accent); border-radius:14px; padding:14px 16px; margin-bottom:20px;}
+  .paste h3{margin:0 0 4px; font-size:14px; font-weight:800;}
+  .paste p{margin:0 0 10px; font-size:12.5px; color:var(--muted);}
+  .paste textarea{width:100%; min-height:96px; font:inherit; font-size:13px; padding:11px; border-radius:10px;
+    border:1px solid var(--border); background:var(--card-2); color:var(--ink); resize:vertical;}
+  .fs{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px 18px; margin-bottom:16px; box-shadow:var(--shadow);}
+  .fs > legend{font-size:12px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--accent-ink); padding:0 6px;}
+  .fs.internal > legend::after{content:" 🔒 내부용"; color:var(--lock); font-weight:700; letter-spacing:0; text-transform:none;}
+  .fgrid{display:grid; grid-template-columns:repeat(2,1fr); gap:12px 14px; margin-top:6px;}
+  .fgrid.p3{grid-template-columns:repeat(3,1fr);}
+  .field{display:flex; flex-direction:column; gap:5px;}
+  .field.wide{grid-column:1/-1;}
+  .field label{font-size:12px; color:var(--muted); font-weight:600;}
+  .field label .req{color:var(--bad);}
+  .field input,.field select,.field textarea{font:inherit; font-size:14px; padding:9px 11px; border-radius:9px;
+    border:1px solid var(--border); background:var(--card-2); color:var(--ink); width:100%;}
+  .field textarea{resize:vertical; min-height:60px;}
+  .price-in{display:grid; grid-template-columns:96px 1fr; gap:8px; align-items:center;}
+  .price-in .lab{font-size:13px; color:var(--ink); font-weight:600;}
+  .actions{display:flex; gap:10px; align-items:center; margin-top:6px;}
+  .btn{font:inherit; font-size:14px; font-weight:700; padding:11px 20px; border-radius:11px; cursor:pointer; border:1px solid transparent;}
+  .btn.primary{background:var(--accent); color:#fff;}
+  .btn.ghost{background:var(--card); color:var(--ink); border-color:var(--border);}
+  .hint{font-size:12px; color:var(--faint);}
+  .toast{position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px); opacity:0;
+    background:var(--ink); color:var(--bg); font-size:13.5px; font-weight:700; padding:11px 20px; border-radius:11px;
+    box-shadow:var(--shadow); transition:.28s; pointer-events:none; z-index:50;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  .hidden{display:none !important;}
+  @media (max-width:560px){ .fgrid,.fgrid.p3{grid-template-columns:1fr;} .top-in{padding:10px 14px;} .wrap{padding:16px 14px 60px;} }
+  @media (prefers-reduced-motion:reduce){ *{transition:none !important;} }
+</style>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <h1>단가 조회</h1>
+      <span class="sub">인플루언서 실비 DB</span>
+    </div>
+    <span class="lockbadge">🔒 내부용</span>
+    <span class="pill neut" id="srcBadge" title="⚙ 버튼으로 시트를 연결하세요">더미 데이터</span>
+    <span class="spacer"></span>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" id="tab-search" onclick="showTab('search')">조회</button>
+      <button role="tab" aria-selected="false" id="tab-excel" onclick="showTab('excel')">📋 엑셀</button>
+      <button role="tab" aria-selected="false" id="tab-input" onclick="showTab('input')">＋ 입력</button>
+    </div>
+    <button class="icon-btn" title="시트 연결 설정" onclick="setupSheet()">⚙︎</button>
+    <button class="icon-btn" id="themeBtn" title="테마 전환" onclick="toggleTheme()">◐</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- ===== 조회 ===== -->
+  <section id="view-search">
+    <div class="filters">
+      <div class="search"><input id="q" type="search" placeholder="채널명 여러 개는 쉼표로 — 예: 나나, 데모쿡" oninput="render()"></div>
+      <select id="campaign" onchange="render()"><option value="">전체 탭</option></select>
+      <div class="seg" role="group" aria-label="플랫폼">
+        <button data-pf="all" aria-pressed="true" onclick="setPf(this,'all')">전체</button>
+        <button data-pf="IG" aria-pressed="false" onclick="setPf(this,'IG')">IG</button>
+        <button data-pf="YT" aria-pressed="false" onclick="setPf(this,'YT')">YT</button>
+      </div>
+      <label class="chk"><input type="checkbox" id="onlyPrice" onchange="render()">단가 있는 것만</label>
+    </div>
+    <div class="count" id="count"></div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <!-- ===== 엑셀 모드 ===== -->
+  <section id="view-excel" class="hidden">
+    <div class="form-wrap">
+      <div class="fs" style="border-style:dashed;">
+        <h3 style="margin:0 0 4px; font-size:14px; font-weight:800;">1️⃣ 채널명 붙여넣기</h3>
+        <p style="margin:0 0 10px; font-size:12.5px; color:var(--muted);">엑셀에서 채널명 열을 복사해 그대로 붙여넣으세요 (한 줄에 하나). 결과도 이 순서 그대로 나옵니다.</p>
+        <textarea id="xlNames" style="width:100%; min-height:110px; font:inherit; font-size:13.5px; padding:11px; border-radius:10px; border:1px solid var(--border); background:var(--card-2); color:var(--ink); resize:vertical;" placeholder="이진&#10;나나&#10;데모쿡"></textarea>
+        <div class="actions" style="margin-top:10px;">
+          <button class="btn primary" onclick="xlResolve()">채널 찾기</button>
+        </div>
+      </div>
+
+      <div class="fs hidden" id="xlResolveBox">
+        <h3 style="margin:0 0 4px; font-size:14px; font-weight:800;">2️⃣ 채널 확인</h3>
+        <p style="margin:0 0 10px; font-size:12.5px; color:var(--muted);">이름이 비슷한 채널이 있으면 링크를 보고 맞는 채널을 골라주세요. 전부 확정돼야 결과를 만들 수 있어요.</p>
+        <div id="xlResolveList"></div>
+      </div>
+
+      <div class="fs hidden" id="xlFieldsBox">
+        <h3 style="margin:0 0 4px; font-size:14px; font-weight:800;">3️⃣ 필요한 값 선택</h3>
+        <p style="margin:0 0 10px; font-size:12.5px; color:var(--muted);">선택한 값들이 한 셀에 합쳐집니다. 예: <b>습김치 7월 릴스 공유가 800만</b></p>
+        <div id="xlFieldPick" style="display:flex; flex-wrap:wrap; gap:8px 14px;"></div>
+        <div class="actions" style="margin-top:14px;">
+          <button class="btn primary" onclick="xlBuild()">결과 만들기</button>
+        </div>
+      </div>
+
+      <div class="fs hidden" id="xlResultBox">
+        <h3 style="margin:0 0 4px; font-size:14px; font-weight:800;">4️⃣ 결과 — 순서 그대로</h3>
+        <p style="margin:0 0 10px; font-size:12.5px; color:var(--muted);">못 찾은 채널은 빈칸으로 자리를 지킵니다. 복사해서 엑셀 열에 그대로 붙여넣으세요.</p>
+        <table style="width:100%; border-collapse:collapse; font-size:13px;" id="xlResultTable"></table>
+        <div class="actions" style="margin-top:12px;">
+          <button class="btn primary" onclick="xlCopy()">📋 결과 복사 (엑셀용)</button>
+          <span class="hint" id="xlCopyHint"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 입력 ===== -->
+  <section id="view-input" class="hidden">
+    <div class="form-wrap">
+      <div class="paste" style="border-color:var(--good);">
+        <h3>📄 시트 통째로 불러오기</h3>
+        <p>구글시트 (템플릿) 탭에서 <b>전체 선택(Ctrl/Cmd+A) → 복사 → 아래에 붙여넣기</b>만 하면 됩니다. 헤더(채널명·링크·릴스…)를 자동으로 찾아 모든 행을 읽어요.</p>
+        <div class="fgrid" style="margin-bottom:8px;">
+          <div class="field wide"><label>이 시트의 탭 이름 — 제품명(월) <span class="req">*</span></label>
+            <input id="bulkTab" placeholder="예: 닭가슴살(7월)"></div>
+        </div>
+        <textarea id="bulkText" placeholder="여기에 시트 전체 내용을 붙여넣기" style="min-height:110px;"></textarea>
+        <div class="actions" style="margin-top:10px;">
+          <button class="btn primary" onclick="bulkParse()">불러오기</button>
+          <span class="hint" id="bulkHint">붙여넣은 내용은 이 브라우저에만 저장됩니다.</span>
+        </div>
+        <div id="bulkPreview" style="margin-top:10px;"></div>
+      </div>
+
+      <div class="paste">
+        <h3>📩 메일에서 불러오기 (초안)</h3>
+        <p>대행사 견적 메일을 붙여넣고 <b>불러오기</b>를 누르면 소속·담당자·연락처·이메일·금액을 자동으로 채워 넣습니다. 저장 전 꼭 확인하세요.</p>
+        <textarea id="mailText" placeholder="여기에 견적 메일 전문을 붙여넣기"></textarea>
+        <div class="actions" style="margin-top:10px;">
+          <button class="btn ghost" onclick="parseMail()">불러오기</button>
+          <span class="hint">정규식 기반이라 완벽하지 않아요. 담당 채널은 직접 지정하세요.</span>
+        </div>
+      </div>
+
+      <form id="form" onsubmit="return saveForm(event)">
+        <fieldset class="fs">
+          <legend>채널 정보</legend>
+          <div class="fgrid">
+            <div class="field"><label>채널명 <span class="req">*</span></label><input name="채널명" required></div>
+            <div class="field"><label>구분</label>
+              <select name="구분"><option value="IG">IG</option><option value="YT">YT</option><option value="">기타</option></select></div>
+            <div class="field wide"><label>채널 링크</label><input name="링크" placeholder="https://"></div>
+            <div class="field wide"><label>탭 — 제품명(기간) <span class="req">*</span></label>
+              <input name="캠페인" required list="campList" placeholder="예: 습나쵸(5월)">
+              <datalist id="campList"></datalist></div>
+          </div>
+        </fieldset>
+
+        <fieldset class="fs internal">
+          <legend>실비 (유형별)</legend>
+          <div id="priceInputs"></div>
+          <p class="hint" style="margin:10px 0 0;">금액은 <b>만원</b> 단위로 적어도 됩니다(예: <b>1600만</b> 또는 <b>1,600만원</b>). 고객사 보고가는 여기에 마진을 얹어 별도 시트로 관리합니다.</p>
+        </fieldset>
+
+        <fieldset class="fs internal">
+          <legend>담당 · 컨택</legend>
+          <div class="fgrid">
+            <div class="field"><label>소속</label><input name="소속"></div>
+            <div class="field"><label>담당자</label><input name="담당자"></div>
+            <div class="field"><label>연락처</label><input name="연락처"></div>
+            <div class="field"><label>담당자 이메일</label><input name="이메일" type="text"></div>
+            <div class="field"><label>컨택포인트</label><input name="컨택포인트" placeholder="DM / 이메일 등"></div>
+            <div class="field wide"><label>비고</label><textarea name="비고"></textarea></div>
+          </div>
+        </fieldset>
+
+        <div class="actions">
+          <button type="submit" class="btn primary">저장</button>
+          <button type="button" class="btn ghost" onclick="resetForm()">초기화</button>
+          <span class="hint">저장하면 이 브라우저에 보관되고, 바로 조회 탭에서 검색됩니다.</span>
+        </div>
+      </form>
+
+      <div class="actions" style="margin-top:22px;">
+        <button class="btn ghost" onclick="exportCsv()">전체 CSV 내보내기</button>
+        <span class="hint">내려받아 시트에 붙여넣어 백업할 수 있어요.</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const RAWDATA = [{"캠페인":"데모(7월)","채널명":"나나","구분":"IG","링크":"https://www.instagram.com/demo_nana","릴스_견적":"900만","릴스_실비":"700만","피드_실비":"300만","소속":"데모MCN","담당자":"김담당","연락처":"010-0000-0001","이메일":"demo1@example.com"},{"캠페인":"데모(7월)","채널명":"나나씨","구분":"YT","링크":"https://www.youtube.com/@demo_nanassi","쇼츠_견적":"1,200만","쇼츠_실비":"1,000만","BDC_실비":"3,000만","컨택포인트":"DM"},{"캠페인":"데모(7월)","채널명":"말랑콩떡 이진","구분":"IG","링크":"https://www.instagram.com/demo_leejin","릴스_실비":"500만","미러링채널":"IG, YT","미러링_실비":"800만","소속":"가상에이전시","담당자":"이담당","이메일":"demo2@example.com"},{"캠페인":"데모(7월)","채널명":"데모쿡","구분":"IG","링크":"https://www.instagram.com/demo_cook","릴스_견적":"600만","릴스_실비":"450만","피드_견적":"200만","피드_실비":"150만","2차/공동_견적":"2차 활용 1개월 100만 (데모)","이메일":"demo3@example.com"},{"캠페인":"데모(7월)","채널명":"데모트래블","구분":"YT","링크":"https://www.youtube.com/@demo_travel","BDC_견적":"5,000만","BDC_실비":"4,200만","기획PPL_실비":"2,500만","연락처":"010-0000-0002","이메일":"demo4@example.com"},{"캠페인":"데모(7월)","채널명":"데모피트","구분":"YT","링크":"https://www.youtube.com/@demo_fit","쇼츠_실비":"800만","미러링채널":"YT, IG","미러링_실비":"1,100만","비고":"데모 데이터"},{"캠페인":"데모(7월)","채널명":"데모홈","구분":"IG","링크":"https://www.instagram.com/demo_home"},{"캠페인":"데모(7월)","채널명":"데모뷰티","구분":"IG","링크":"https://www.instagram.com/demo_beauty","릴스_견적":"400만"},{"캠페인":"데모(7월)","채널명":"데모키즈","구분":"IG","링크":"https://www.instagram.com/demo_kids","단순PPL_실비":"350만","컨택포인트":"demo5@example.com"},{"캠페인":"데모(7월)","채널명":"데모게임","구분":"YT","링크":"https://www.youtube.com/@demo_game"}];
+const PRICE_TYPES = ["릴스","쇼츠","틱톡","미러링","피드","BDC","기획PPL","단순PPL","2차/공동"];
+const LS_KEY = "danga_custom_v1";
+let pf = "all";
+
+/* ---------- storage & data sources ---------- */
+const LS_URL="sheet_api_url";
+let sheetRows=[], sheetOk=false;
+function loadCustom(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)||"[]"); }catch(e){ return []; } }
+function saveCustom(arr){ localStorage.setItem(LS_KEY, JSON.stringify(arr)); }
+// 우선순위: 이 브라우저에서 입력한 값 > 연결된 시트 > (시트 연결 전에만) 더미
+function allData(){ return loadCustom().concat(sheetRows, sheetOk?[]:RAWDATA); }
+
+/* ---------- 시트 연결 (Apps Script 웹앱) ---------- */
+function fetchSheet(){
+  const url=localStorage.getItem(LS_URL);
+  const badge=document.getElementById('srcBadge');
+  if(!url){ badge.textContent="더미 데이터"; badge.className="pill warn"; return; }
+  badge.textContent="시트 불러오는 중…"; badge.className="pill neut";
+  fetch(url).then(r=>r.json()).then(j=>{
+    sheetRows=[];
+    (j.tabs||[]).forEach(t=>{
+      const g=parseGrid(t.rows, t.name);
+      sheetRows=sheetRows.concat(g.rows);
+    });
+    sheetOk=true;
+    badge.textContent=`시트 연결됨 · 탭 ${(j.tabs||[]).length}개 · ${sheetRows.length}채널`;
+    badge.className="pill good";
+    buildCampaignOptions(); render();
+  }).catch(e=>{
+    badge.textContent="시트 연결 실패 — ⚙에서 URL 확인"; badge.className="pill bad";
+  });
+}
+function setupSheet(){
+  const cur=localStorage.getItem(LS_URL)||"";
+  const url=prompt("시트 Apps Script 웹앱 URL을 붙여넣으세요.\n(시트의 확장 프로그램 > Apps Script에 WebApp.gs 설치 → 배포 > 웹 앱 → URL 복사)\n\n비우고 확인하면 연결이 해제됩니다.", cur);
+  if(url===null) return;
+  if(url.trim()) localStorage.setItem(LS_URL,url.trim()); else { localStorage.removeItem(LS_URL); sheetOk=false; sheetRows=[]; }
+  fetchSheet();
+}
+
+/* ---------- helpers ---------- */
+function manToWon(str){
+  if(!str) return null;
+  const m = String(str).replace(/,/g,"").match(/(\d+(?:\.\d+)?)\s*만/);
+  if(m) return Math.round(parseFloat(m[1])*10000)*100; // 만원 -> 원  (만 * 10000원? 만원단위: 1600만원)
+  return null;
+}
+// 실비 표기는 '만원' 기준: 1600만 = 1,600만원 = 16,000,000원
+function manValue(str){
+  if(!str) return null;
+  const m = String(str).replace(/,/g,"").match(/(\d+(?:\.\d+)?)/);
+  return m ? parseFloat(m[1]) : null; // 단위: 만원
+}
+function fmtMan(v){ return v==null?"":v.toLocaleString("ko-KR"); }
+function esc(s){ return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+function priceOf(ch,type){
+  // 실비 우선, 없으면 견적 원문
+  const sb = (ch[type+"_실비"]||"").trim();
+  const base = (ch[type+"_견적"]||"").trim();
+  return { sb, base, show: sb || base };
+}
+function hasAnyPrice(ch){ return PRICE_TYPES.some(t=>priceOf(ch,t).show); }
+
+/* ---------- render 조회 ---------- */
+function setPf(btn,v){ pf=v; document.querySelectorAll('.seg [data-pf]').forEach(b=>b.setAttribute('aria-pressed', b===btn)); render(); }
+
+// "1600만" → "1,600만" (4자리 이상 숫자에 콤마)
+function fmtNum(s){ return String(s).replace(/\d{4,}/g, n=>Number(n).toLocaleString("ko-KR")); }
+
+function card(ch){
+  const pfk = ch.구분==="IG"?"IG":ch.구분==="YT"?"YT":"ETC";
+  const idm = (ch.링크||"").replace(/^https?:\/\/(www\.)?/,"").replace(/\/$/,"");
+
+  // 단가: 고객사 보고가(공유가)가 주인공(크게), 실비는 아래 작게(내부 참고).
+  const items = PRICE_TYPES.map(t=>{
+    const p=priceOf(ch,t); if(!p.show) return "";
+    const primary = p.base || p.sb;          // 공유가 우선, 없으면 실비만
+    const tag = p.base ? `<span class="ptag est">공유가</span>` : `<span class="ptag sb">실비</span>`;
+    const long = primary.length>14;          // 긴 조건 텍스트는 본문체로
+    const sub = (p.base && p.sb && p.sb!==p.base)
+      ? `<span class="orig tnum" style="text-decoration:none;">실비 ${esc(fmtNum(p.sb))}</span>` : "";
+    return `<div class="pitem"><span class="pt">${t} ${tag}</span>
+      <span class="pv tnum${long?" long":""}">${esc(fmtNum(primary))}</span>${sub}</div>`;
+  }).filter(Boolean).join("");
+  const priceHtml = items ? `<div class="pgrid">${items}</div>` : `<div class="noprice">단가 미확인</div>`;
+
+  const hasContact = ch.소속||ch.담당자||ch.연락처||ch.이메일||ch.컨택포인트;
+  const cpRow=(k,v,copyable)=> v?`<div class="row"><span class="k">${k}</span>
+    <span class="v${copyable?" copy tnum":""}"${copyable?` onclick="copyTxt('${esc(v).replace(/'/g,"\\'")}')" title="클릭하면 복사"`:""}>${esc(v)}</span></div>`:"";
+  const contact = hasContact ? `<div class="contact"><div class="hd">컨택</div>
+     ${cpRow("소속",ch.소속)}${cpRow("담당",ch.담당자)}
+     ${cpRow("연락처",ch.연락처,true)}${cpRow("이메일",ch.이메일,true)}${cpRow("컨택",ch.컨택포인트,true)}
+   </div>` : "<div></div>";
+
+  const moreBody = [ch.비고, (ch["2차/공동_견적"]||"").trim()].filter(x=>x&&String(x).trim()).join("\n\n");
+  const more = moreBody ? `<details class="more"><summary>메모 · 라이선스</summary><div class="body">${esc(moreBody)}</div></details>` : "";
+
+  return `<article class="card">
+    <div class="ident">
+      <h2 class="ch-name">${esc(ch.채널명)}</h2>
+      <div class="ch-meta"><span class="pf ${pfk}">${esc(ch.구분||"·")}</span>
+        ${ch.캠페인?`<span class="pill neut">${esc(ch.캠페인)}</span>`:""}</div>
+      ${idm?`<a class="ch-link" href="${esc(ch.링크)}" target="_blank" rel="noopener">${esc(idm)} ↗</a>`:""}
+    </div>
+    ${priceHtml}
+    ${contact}
+    ${more}
+  </article>`;
+}
+
+function copyTxt(t){ navigator.clipboard.writeText(t).then(()=>toast('복사됨 · '+t)); }
+function setQ(v){ document.getElementById('q').value=v; render(); }
+
+function buildCampaignOptions(){
+  const sel=document.getElementById('campaign');
+  const cur=sel.value;
+  const seen=new Set();
+  allData().forEach(ch=>{ if(ch.캠페인) seen.add(ch.캠페인); });
+  sel.innerHTML='<option value="">전체 탭</option>'+[...seen].map(c=>`<option${c===cur?" selected":""}>${esc(c)}</option>`).join("");
+}
+
+function render(){
+  const rawQ=(document.getElementById('q').value||"").trim();
+  const camp=document.getElementById('campaign').value;
+  const only=document.getElementById('onlyPrice').checked;
+
+  // 검색 전에는 결과를 띄우지 않는다 (탭 선택이나 필터가 있으면 예외)
+  if(!rawQ && !camp && !only && pf==="all"){
+    document.getElementById('count').innerHTML="";
+    document.getElementById('grid').innerHTML=
+      `<div class="empty">채널명을 검색하세요 — 여러 채널은 쉼표로 구분
+        <div class="ex">
+          <button onclick="setQ('나나')">나나</button>
+          <button onclick="setQ('이진')">이진</button>
+          <button onclick="setQ('데모쿡, 나나씨')">데모쿡, 나나씨</button>
+        </div></div>`;
+    return;
+  }
+
+  // 멀티 검색: 쉼표/줄바꿈으로 분리, 하나라도 걸리면 매치
+  const terms=rawQ.split(/[,\n]/).map(s=>s.trim().toLowerCase()).filter(Boolean);
+  let list=allData().filter(ch=>ch.채널명);
+  if(camp) list=list.filter(ch=>ch.캠페인===camp);
+  if(pf!=="all") list=list.filter(ch=>ch.구분===pf);
+  if(only) list=list.filter(hasAnyPrice);
+  if(terms.length){
+    // 띄어쓰기 무시 비교: '말랑콩떡이진'으로도 '말랑콩떡 이진'이 걸리게
+    const nz=s=>(s||"").replace(/\s+/g,"").toLowerCase();
+    list=list.filter(ch=>{
+      const hay=[ch.채널명,ch.링크,ch.담당자,ch.소속,ch.이메일,ch.연락처,ch.컨택포인트].map(nz);
+      return terms.some(t=>{const tn=t.replace(/\s+/g,""); return hay.some(h=>h.includes(tn));});
+    });
+    // 검색어 순서대로 정렬
+    list.sort((a,b)=>{
+      const ia=terms.findIndex(t=>(a.채널명||"").toLowerCase().includes(t));
+      const ib=terms.findIndex(t=>(b.채널명||"").toLowerCase().includes(t));
+      return (ia<0?99:ia)-(ib<0?99:ib);
+    });
+  }
+  document.getElementById('count').innerHTML = `<b>${list.length}</b>건`;
+  document.getElementById('grid').innerHTML = list.length
+    ? list.map(card).join("")
+    : `<div class="empty" style="grid-column:1/-1">검색 결과가 없어요.</div>`;
+}
+
+/* ---------- tabs / theme ---------- */
+function showTab(t){
+  ["search","excel","input"].forEach(k=>{
+    document.getElementById('view-'+k).classList.toggle('hidden',k!==t);
+    document.getElementById('tab-'+k).setAttribute('aria-selected',k===t);
+  });
+}
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const next = cur==='dark'?'light':cur==='light'?'dark': (matchMedia('(prefers-color-scheme:dark)').matches?'light':'dark');
+  document.documentElement.setAttribute('data-theme',next);
+}
+
+/* ---------- input form ---------- */
+function buildPriceInputs(){
+  document.getElementById('priceInputs').innerHTML = PRICE_TYPES.map(t=>
+    `<div class="price-in" style="margin-bottom:8px;"><span class="lab">${t}</span>
+       <input name="price_${t}" placeholder="실비 (예: 900만)"></div>`).join("");
+}
+function resetForm(){ document.getElementById('form').reset(); }
+
+function saveForm(e){
+  e.preventDefault();
+  const f=e.target, obj={};
+  ["채널명","구분","링크","캠페인","소속","담당자","연락처","이메일","컨택포인트","비고"]
+    .forEach(k=>obj[k]=(f.elements[k]?.value||"").trim());
+  PRICE_TYPES.forEach(t=>{ const v=(f.elements['price_'+t]?.value||"").trim(); if(v) obj[t+"_실비"]=v; });
+  obj._custom=true;
+  const arr=loadCustom(); arr.unshift(obj); saveCustom(arr);
+  f.reset(); toast(`저장됐어요 · ${obj.채널명}`); buildCampaignOptions(); showTab('search');
+  document.getElementById('q').value=obj.채널명; render();
+  return false;
+}
+
+/* ---------- 시트 통째 붙여넣기 파서 ---------- */
+// (템플릿) 컬럼명 → 내부 필드 매핑. '릴스'류(라벨 없는 열)=고객사 공유가(_견적), '~실비'=내부 실비(_실비)
+const BULK_MAP = {
+  "채널명":"채널명","구분":"구분","링크":"링크",
+  "릴스":"릴스_견적","릴스실비":"릴스_실비","쇼츠":"쇼츠_견적","쇼츠실비":"쇼츠_실비",
+  "틱톡":"틱톡_견적","틱톡실비":"틱톡_실비","미러링":"미러링_견적","미러링실비":"미러링_실비",
+  "미러링채널(yt/ig/tt/기타)":"미러링채널","미러링채널":"미러링채널",
+  "피드":"피드_견적","피드실비":"피드_실비","bdc":"BDC_견적","bdc실비":"BDC_실비",
+  "기획ppl":"기획PPL_견적","기획ppl실비":"기획PPL_실비","단순ppl":"단순PPL_견적","단순ppl실비":"단순PPL_실비",
+  "2차라이선스활용":"2차/공동_견적","공동작업자":"공동작업자","2차라이선스&공동작업자실비":"2차/공동_실비",
+  "소속":"소속","담당자":"담당자","담당자연락처":"연락처","담당자이메일":"이메일",
+  "컨택포인트":"컨택포인트","상품소개서":"상품소개서","비고":"비고"
+};
+let bulkRows=[];
+
+// 컬럼명 유연 인식: 정확 일치 → 의미 기반 규칙 순. 이름이 조금 달라도(담당자 메일, 채널 링크, 대행사...) 잡아낸다.
+function mapHeader(h){
+  const n=String(h||"").replace(/\s+/g,"").toLowerCase();
+  if(!n) return null;
+  if(BULK_MAP[n]) return BULK_MAP[n];
+  if(/업로드/.test(n)) return null;                       // 업로드 링크는 채널 링크가 아님
+  if(/미러링.*채널|채널.*미러링/.test(n)) return "미러링채널";
+  if(/2차|라이선스/.test(n)) return /실비/.test(n) ? "2차/공동_실비" : "2차/공동_견적";
+  if(/공동작업자/.test(n)) return "공동작업자";
+  // 유형별 단가: '실비' 포함 여부로 공유가/실비 구분
+  const types=[["기획ppl","기획PPL"],["단순ppl","단순PPL"],["bdc","BDC"],["릴스","릴스"],["쇼츠","쇼츠"],["틱톡","틱톡"],["미러링","미러링"],["피드","피드"]];
+  for(const [pat,key] of types){
+    if(n.includes(pat)) return /실비|원가|내부/.test(n) ? key+"_실비" : key+"_견적";
+  }
+  if(/이메일|e-?mail|메일/.test(n)) return "이메일";
+  if(/연락처|전화|휴대폰|핸드폰|폰번호/.test(n)) return "연락처";
+  if(/컨택/.test(n)) return "컨택포인트";
+  if(/소개서/.test(n)) return "상품소개서";
+  if(/소속|업체|대행사|에이전시|mcn/.test(n)) return "소속";
+  if(/담당/.test(n)) return "담당자";
+  if(/채널명|채널이름|계정명|크리에이터/.test(n)) return "채널명";
+  if(/링크|url|주소/.test(n)) return "링크";
+  if(/^구분$|플랫폼/.test(n)) return "구분";
+  if(/비고|메모|note/.test(n)) return "비고";
+  return null;
+}
+
+// 2D 그리드(시트 탭이든 붙여넣기든)를 파싱하는 공용 로직
+// 헤더 행을 의미 기반으로 찾고, 컬럼명이 달라도 mapHeader로 매핑한다.
+function parseGrid(lines, tab){
+  let hi=-1;
+  for(let i=0;i<Math.min(lines.length,40);i++){
+    const hits=lines[i].filter(c=>mapHeader(c)).length;
+    if(lines[i].some(c=>mapHeader(c)==="채널명") && hits>=3){ hi=i; break; }
+  }
+  if(hi<0) return {rows:[], mapped:[], unmapped:[], noHeader:true};
+  const idx={}, mapped=[], unmapped=[];
+  lines[hi].forEach((h,c)=>{
+    const t=String(h||"").trim(); if(!t) return;
+    const k=mapHeader(h);
+    if(k){ if(idx[k]==null){ idx[k]=c; mapped.push([t,k]); } }
+    else unmapped.push(t);
+  });
+  const rows=[];
+  for(let r=hi+1;r<lines.length;r++){
+    const row=lines[r];
+    const name=String(row[idx["채널명"]]||"").trim();
+    if(!name) continue;
+    if(mapHeader(name)==="채널명") continue;              // 반복 헤더 행 건너뜀
+    const obj={캠페인:tab};
+    Object.keys(idx).forEach(k=>{ const v=String(row[idx[k]]||"").trim(); if(v) obj[k]=v; });
+    obj.채널명=name;
+    if(obj.공동작업자){ obj["2차/공동_견적"]=[obj["2차/공동_견적"],"공동작업자: "+obj.공동작업자].filter(Boolean).join(" / "); delete obj.공동작업자; }
+    rows.push(obj);
+  }
+  return {rows, mapped, unmapped};
+}
+
+function bulkParse(){
+  const tab=(document.getElementById('bulkTab').value||"").trim();
+  const text=document.getElementById('bulkText').value;
+  if(!tab){ toast('탭 이름(제품명(월))을 먼저 입력하세요'); return; }
+  if(!text.trim()){ toast('시트 내용을 붙여넣어 주세요'); return; }
+  const lines=text.split(/\r?\n/).map(l=>l.split("\t"));
+  const g=parseGrid(lines, tab);
+  if(g.noHeader){ document.getElementById('bulkPreview').innerHTML=
+    `<span class="pill bad">헤더를 찾지 못했어요 — '채널명' 열이 포함되게 복사했는지 확인하세요</span>`; return; }
+  const mapped=g.mapped, unmapped=g.unmapped;
+  bulkRows=g.rows.map(r=>({...r,_custom:true}));
+  if(!bulkRows.length){ document.getElementById('bulkPreview').innerHTML=`<span class="pill warn">읽을 데이터 행이 없어요</span>`; return; }
+
+  // ── 확인 단계: 어떻게 들어가는지 표로 보여주고, 확인 후에만 저장 ──
+  const showCols=["채널명","구분","링크","릴스_견적","릴스_실비","쇼츠_견적","쇼츠_실비","틱톡_견적","틱톡_실비",
+    "미러링_견적","미러링_실비","피드_견적","피드_실비","BDC_견적","BDC_실비","기획PPL_견적","기획PPL_실비",
+    "단순PPL_견적","단순PPL_실비","소속","담당자","연락처","이메일","컨택포인트"]
+    .filter(c=>bulkRows.some(r=>r[c]));
+  const th=c=>c.replace("_견적"," 공유가").replace("_실비"," 실비");
+  const cell='padding:5px 8px; border:1px solid var(--border); white-space:nowrap; max-width:180px; overflow:hidden; text-overflow:ellipsis;';
+  const preview=bulkRows.slice(0,12);
+  const tableHtml=`<div style="overflow-x:auto; margin-top:10px; border-radius:8px;">
+    <table style="border-collapse:collapse; font-size:12px;">
+      <tr>${showCols.map(c=>`<th style="${cell} background:var(--accent-soft); position:sticky; left:auto;">${esc(th(c))}</th>`).join("")}</tr>
+      ${preview.map(r=>`<tr>${showCols.map(c=>`<td style="${cell}" title="${esc(r[c]||"")}">${esc(r[c]||"")}</td>`).join("")}</tr>`).join("")}
+    </table></div>
+    ${bulkRows.length>12?`<div class="hint" style="margin-top:5px;">…외 ${bulkRows.length-12}행 (전체 ${bulkRows.length}행 저장됨)</div>`:""}`;
+  const mapReport=`<details class="more" style="margin-top:10px;"><summary>열 인식 결과 보기 (${mapped.length}개 인식${unmapped.length?` · ${unmapped.length}개 무시`:""})</summary>
+    <div class="body">${mapped.map(([o,k])=>`「${esc(o)}」 → ${esc(th(k))}`).join("\n")}${unmapped.length?`\n\n[무시된 열]\n${unmapped.map(esc).join(", ")}`:""}</div></details>`;
+
+  document.getElementById('bulkPreview').innerHTML=
+    `<span class="pill good">${bulkRows.length}개 채널 인식</span>
+     <span style="font-size:12.5px; color:var(--muted);"> — 아래 표에서 값이 맞게 들어갔는지 확인한 뒤 저장하세요.</span>
+     ${tableHtml}${mapReport}
+     <div class="actions" style="margin-top:12px;">
+       <button class="btn primary" onclick="bulkSave()">✓ 확인했어요, 저장 (${bulkRows.length}건)</button>
+       <button class="btn ghost" onclick="bulkRows=[];document.getElementById('bulkPreview').innerHTML='';">취소</button>
+       <span class="hint">같은 탭+채널명이 이미 있으면 새 값으로 교체됩니다.</span>
+     </div>`;
+}
+
+function bulkSave(){
+  if(!bulkRows.length) return;
+  let arr=loadCustom();
+  // 같은 탭+채널명은 교체
+  const key=o=>o.캠페인+"||"+o.채널명;
+  const incoming=new Set(bulkRows.map(key));
+  arr=arr.filter(o=>!incoming.has(key(o)));
+  arr=bulkRows.concat(arr);
+  saveCustom(arr);
+  const n=bulkRows.length; bulkRows=[];
+  document.getElementById('bulkText').value=""; document.getElementById('bulkPreview').innerHTML="";
+  buildCampaignOptions(); toast(n+'건 저장 완료'); showTab('search'); render();
+}
+
+/* ---------- mail parse (best-effort draft) ---------- */
+function parseMail(){
+  const t=document.getElementById('mailText').value; if(!t.trim()){ toast('메일 내용을 붙여넣어 주세요'); return; }
+  const f=document.getElementById('form');
+  const email=(t.match(/[\w.+-]+@[\w-]+\.[\w.-]+/)||[])[0];
+  const phone=(t.match(/01[016789][-.\s]?\d{3,4}[-.\s]?\d{4}/)||[])[0];
+  const org=(t.match(/([가-힣A-Za-z0-9]+)\s*(?:매니지먼트|엔터(?:테인먼트)?|미디어|스튜디오|컴퍼니)?\s*담당(?:하고|자)/)||[])[1];
+  const name=(t.match(/([가-힣]{2,4})\s*(?:입니다|드림|올림)/)||[])[1];
+  if(email) f.elements['이메일'].value=email;
+  if(phone) f.elements['연락처'].value=phone;
+  if(org)   f.elements['소속'].value=org;
+  if(name)  f.elements['담당자'].value=name;
+  f.elements['비고'].value = t.trim();
+  toast('불러왔어요 · 값 확인 후 저장하세요');
+}
+
+/* ---------- export ---------- */
+function exportCsv(){
+  const cols=["제품명","월","채널명","구분","링크",
+    ...PRICE_TYPES.map(t=>t+"_실비"),"소속","담당자","연락처","이메일","컨택포인트","비고"];
+  const rows=allData().filter(c=>c.채널명);
+  const csv=[cols.join(",")].concat(rows.map(r=>{
+    const cp=campParts(r.캠페인);
+    return cols.map(c=>{
+      let v = c==="제품명" ? cp.제품명 : c==="월" ? cp.날짜 : (r[c]==null?"":String(r[c]));
+      if(/[",\n]/.test(v)) v='"'+v.replace(/"/g,'""')+'"'; return v;
+    }).join(",");
+  })).join("\n");
+  const blob=new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="단가_실비DB.csv"; a.click();
+}
+
+/* ---------- 엑셀 모드 ---------- */
+let xlTerms=[];   // [{term, cands:[dataIdx...], picked:dataIdx|null|-1}]  -1 = 빈칸 확정
+let xlData=[];    // resolve 시점의 allData 스냅샷
+
+const XL_META = [["제품명","제품명"],["날짜","월"],["채널명","채널명"],["링크","채널 링크"]];
+function xlNorm(s){ return String(s||"").replace(/\s+/g,"").toLowerCase(); }
+function campParts(camp){
+  // "닭가슴살(7월)" -> {제품명:"닭가슴살", 날짜:"7월"}  (전각 괄호 （）도 허용)
+  const m=String(camp||"").match(/^(.*?)\s*[（(]([^)）]*)[)）]\s*$/);
+  return m ? {제품명:m[1].trim(), 날짜:m[2].trim()} : {제품명:String(camp||"").trim(), 날짜:""};
+}
+
+function xlResolve(){
+  const lines=document.getElementById('xlNames').value.split(/\n/).map(s=>s.trim()).filter(Boolean);
+  if(!lines.length){ toast('채널명을 붙여넣어 주세요'); return; }
+  xlData=allData().filter(c=>c.채널명);
+  xlTerms=lines.map(term=>{
+    const t=xlNorm(term);
+    // 완전일치 + 부분일치 후보를 모두 모은다 ('나나' 검색 시 '나나'와 '나나씨' 둘 다 제시)
+    const all=xlData.map((c,i)=>({i,n:xlNorm(c.채널명)}));
+    const exact=all.filter(x=>x.n===t);
+    const partial=all.filter(x=>x.n!==t && (x.n.includes(t)||t.includes(x.n)));
+    const idxs=exact.concat(partial).map(x=>x.i);
+    // 후보가 1개뿐일 때만 자동 확정, 2개 이상이면(완전일치 포함) 반드시 확인
+    return { term, cands:idxs, picked: idxs.length===1 ? idxs[0] : (idxs.length===0 ? -1 : null) };
+  });
+  xlRenderResolve();
+  document.getElementById('xlResolveBox').classList.remove('hidden');
+  document.getElementById('xlFieldsBox').classList.add('hidden');
+  document.getElementById('xlResultBox').classList.add('hidden');
+  xlMaybeFields();
+}
+
+function xlRenderResolve(){
+  const html=xlTerms.map((t,ti)=>{
+    let body="";
+    if(t.cands.length===0){
+      body=`<span class="pill bad">찾을 수 없는 계정입니다 → 빈칸 처리</span>`;
+    } else if(t.cands.length===1){
+      const c=xlData[t.cands[0]];
+      body=`<span class="pill good">확정</span> <b>${esc(c.채널명)}</b>
+        <a class="ch-link" href="${esc(c.링크)}" target="_blank" rel="noopener">${esc((c.링크||"").replace(/^https?:\/\/(www\.)?/,""))}</a>
+        ${c.캠페인?`<span class="pill neut">${esc(c.캠페인)}</span>`:""}`;
+    } else {
+      body=`<span class="pill warn">비슷한 채널 ${t.cands.length}개 — 확인해주세요</span><div style="display:flex; flex-direction:column; gap:5px; margin-top:7px;">`+
+        t.cands.map(ci=>{
+          const c=xlData[ci];
+          return `<label class="chk" style="align-items:flex-start;">
+            <input type="radio" name="xlpick_${ti}" ${t.picked===ci?"checked":""} onchange="xlPick(${ti},${ci})">
+            <span><b>${esc(c.채널명)}</b> ${c.캠페인?`<span class="pill neut">${esc(c.캠페인)}</span>`:""}<br>
+            <a class="ch-link" href="${esc(c.링크)}" target="_blank" rel="noopener">${esc(c.링크)}</a></span></label>`;
+        }).join("")+
+        `<label class="chk"><input type="radio" name="xlpick_${ti}" ${t.picked===-1?"checked":""} onchange="xlPick(${ti},-1)"><span>해당 없음 → 빈칸 처리</span></label></div>`;
+    }
+    return `<div style="padding:11px 0; border-bottom:1px dashed var(--border);">
+      <div style="font-size:12px; color:var(--faint); margin-bottom:4px;">${ti+1}. 입력값 「${esc(t.term)}」</div>${body}</div>`;
+  }).join("");
+  document.getElementById('xlResolveList').innerHTML=html;
+}
+
+function xlPick(ti,ci){ xlTerms[ti].picked=ci; xlMaybeFields(); }
+function xlMaybeFields(){
+  const done=xlTerms.every(t=>t.picked!==null);
+  document.getElementById('xlFieldsBox').classList.toggle('hidden',!done);
+  if(done) xlRenderFields();
+}
+
+function xlRenderFields(){
+  const priceFields=[];
+  PRICE_TYPES.forEach(t=>{ priceFields.push([t+"_견적",t+" 공유가"],[t+"_실비",t+" 실비"]); });
+  const saved=xlSavedFields();
+  document.getElementById('xlFieldPick').innerHTML =
+    XL_META.concat(priceFields).map(([k,l])=>
+      `<label class="chk"><input type="checkbox" value="${esc(k)}" ${saved.includes(k)?"checked":""}> ${esc(l)}</label>`).join("");
+}
+function xlSavedFields(){ try{ return JSON.parse(localStorage.getItem("xl_fields")||'["제품명","날짜","릴스_견적","릴스_실비"]'); }catch(e){ return []; } }
+
+function xlSelectedFields(){ return [...document.querySelectorAll('#xlFieldPick input:checked')].map(i=>i.value); }
+
+function xlCell(ch, fields){
+  const cp=campParts(ch.캠페인);
+  const parts=[];
+  fields.forEach(f=>{
+    if(f==="제품명"){ if(cp.제품명) parts.push(cp.제품명); }
+    else if(f==="날짜"){ if(cp.날짜) parts.push(cp.날짜); }
+    else if(f==="채널명"){ parts.push(ch.채널명); }
+    else if(f==="링크"){ if(ch.링크) parts.push(ch.링크); }
+    else {
+      const v=(ch[f]||"").trim();
+      if(v){
+        const label=f.replace("_견적"," 공유가").replace("_실비"," 실비");
+        parts.push(label+" "+v);
+      }
+    }
+  });
+  return parts.join(" ");
+}
+
+let xlLines=[];
+function xlBuild(){
+  const fields=xlSelectedFields();
+  if(!fields.length){ toast('필요한 값을 하나 이상 선택하세요'); return; }
+  localStorage.setItem("xl_fields", JSON.stringify(fields));
+  xlLines=xlTerms.map(t=> t.picked===-1 ? "" : xlCell(xlData[t.picked], fields));
+  document.getElementById('xlResultTable').innerHTML =
+    `<tr><th style="text-align:left; padding:7px 9px; background:var(--accent-soft); border:1px solid var(--border); width:130px;">입력값</th>
+     <th style="text-align:left; padding:7px 9px; background:var(--accent-soft); border:1px solid var(--border);">결과 (한 셀)</th></tr>`+
+    xlTerms.map((t,i)=>`<tr>
+      <td style="padding:7px 9px; border:1px solid var(--border); color:var(--muted);">${esc(t.term)}</td>
+      <td style="padding:7px 9px; border:1px solid var(--border);">${xlLines[i]?esc(xlLines[i]):'<span style="color:var(--faint);">(빈칸)</span>'}</td></tr>`).join("");
+  document.getElementById('xlResultBox').classList.remove('hidden');
+  document.getElementById('xlResultBox').scrollIntoView({behavior:'smooth'});
+}
+
+function xlCopy(){
+  const text=xlLines.join("\n");
+  navigator.clipboard.writeText(text).then(
+    ()=>{ document.getElementById('xlCopyHint').textContent="복사됨! 엑셀 셀에 붙여넣으세요."; toast('결과가 복사됐어요'); },
+    ()=>{ // fallback
+      const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); ta.remove(); toast('결과가 복사됐어요'); });
+}
+
+/* ---------- toast ---------- */
+let toTimer;
+function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show');
+  clearTimeout(toTimer); toTimer=setTimeout(()=>el.classList.remove('show'),2600); }
+
+/* ---------- init ---------- */
+buildPriceInputs();
+buildCampaignOptions();
+fetchSheet();
+// 입력 폼 datalist에도 기존 탭 채우기
+(function(){ const dl=document.getElementById('campList'); if(dl){ const seen=new Set(); allData().forEach(c=>c.캠페인&&seen.add(c.캠페인)); dl.innerHTML=[...seen].map(c=>`<option value="${esc(c)}">`).join(""); }})();
+render();
+</script>
