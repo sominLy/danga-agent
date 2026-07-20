@@ -432,8 +432,12 @@ function card(ch){
      ${cpRow("연락처",ch.연락처,true)}${cpRow("이메일",ch.이메일,true)}${cpRow("컨택",ch.컨택포인트,true)}
    </div>` : "<div></div>";
 
-  const moreBody = [ch.비고, (ch["2차/공동_견적"]||"").trim()].filter(x=>x&&String(x).trim()).join("\n\n");
-  const more = moreBody ? `<details class="more"><summary>메모 · 라이선스</summary><div class="body">${esc(moreBody)}</div></details>` : "";
+  const secTxt=(ch["2차활용범위"]||"").trim();
+  const moreBody = [
+    secTxt ? "[2차 활용 범위 — 고객사 공유용]\n"+secTxt.split(" / ").join("\n") : "",
+    (ch["2차/공동_견적"]||"").trim(), (ch["2차/공동_실비"]||"").trim()?("2차/공동 실비: "+ch["2차/공동_실비"]):"", ch.비고
+  ].filter(x=>x&&String(x).trim()).join("\n\n");
+  const more = moreBody ? `<details class="more"${secTxt?" open":""}><summary>2차 활용 · 메모</summary><div class="body">${esc(moreBody)}</div></details>` : "";
 
   return `<article class="card">
     <div class="ident">
@@ -581,6 +585,18 @@ const BULK_MAP = {
 };
 let bulkRows=[];
 
+// ── 2차 활용 범위 인식 목록 ──
+// 이 패턴에 걸리는 열은 전부 "컬럼명: 셀내용" 형태로 채널별 2차활용범위에 합쳐진다.
+// 새 유형이 생기면 여기에 패턴만 추가하면 됨 (예: 기본/광고/커머스 라이선스, 초상성명, 쇼핑태그, 공동작업자 등)
+const SEC_PATTERNS=[/라이선스/, /초상/, /성명/, /쇼핑태그/, /공동작업자/, /2차/];
+function isSecondary(h){
+  const n=String(h||"").replace(/\s+/g,"");
+  if(!n) return false;
+  return SEC_PATTERNS.some(p=>p.test(n));
+}
+// 열 라벨 정리: 여러 줄 헤더면 첫 줄만 (예: "기본 라이선스\n*온드미디어..." → "기본 라이선스")
+function secLabel(h){ return String(h||"").split(/\n/)[0].trim(); }
+
 // 컬럼명 유연 인식: 정확 일치 → 의미 기반 규칙 순. 이름이 조금 달라도(담당자 메일, 채널 링크, 대행사...) 잡아낸다.
 function mapHeader(h){
   const n=String(h||"").replace(/\s+/g,"").toLowerCase();
@@ -588,8 +604,6 @@ function mapHeader(h){
   if(BULK_MAP[n]) return BULK_MAP[n];
   if(/업로드/.test(n)) return null;                       // 업로드 링크는 채널 링크가 아님
   if(/미러링.*채널|채널.*미러링/.test(n)) return "미러링채널";
-  if(/2차|라이선스/.test(n)) return /실비/.test(n) ? "2차/공동_실비" : "2차/공동_견적";
-  if(/공동작업자/.test(n)) return "공동작업자";
   // 유형별 단가: '실비' 포함 여부로 공유가/실비 구분
   const types=[["파워페이지","파워페이지"],["파워페이","파워페이지"],["매거진","매거진"],["기획ppl","기획PPL"],["단순ppl","단순PPL"],["bdc","BDC"],["릴스","릴스"],["쇼츠","쇼츠"],["틱톡","틱톡"],["미러링","미러링"],["피드","피드"]];
   for(const [pat,key] of types){
@@ -617,9 +631,11 @@ function parseGrid(lines, tab){
     if(lines[i].some(c=>mapHeader(c)==="채널명") && hits>=3){ hi=i; break; }
   }
   if(hi<0) return {rows:[], mapped:[], unmapped:[], noHeader:true};
-  const idx={}, mapped=[], unmapped=[];
+  const idx={}, mapped=[], unmapped=[], secIdx=[];
   lines[hi].forEach((h,c)=>{
     const t=String(h||"").trim(); if(!t) return;
+    // 2차 활용 계열 열은 "컬럼명: 셀내용"으로 채널별로 모은다 (기본/광고/커머스 라이선스, 초상성명, 쇼핑태그, 공동작업자...)
+    if(isSecondary(t)){ secIdx.push({c, label:secLabel(t)}); mapped.push([t,"2차활용범위"]); return; }
     const k=mapHeader(h);
     if(k){ if(idx[k]==null){ idx[k]=c; mapped.push([t,k]); } }
     else unmapped.push(t);
@@ -633,7 +649,9 @@ function parseGrid(lines, tab){
     const obj={캠페인:tab};
     Object.keys(idx).forEach(k=>{ const v=String(row[idx[k]]||"").trim(); if(v) obj[k]=v; });
     obj.채널명=name;
-    if(obj.공동작업자){ obj["2차/공동_견적"]=[obj["2차/공동_견적"],"공동작업자: "+obj.공동작업자].filter(Boolean).join(" / "); delete obj.공동작업자; }
+    // 2차 활용 범위 조합 (고객사 공유용)
+    const sec=secIdx.map(({c,label})=>{ const v=String(row[c]||"").trim(); return v? label+": "+v : ""; }).filter(Boolean);
+    if(sec.length) obj["2차활용범위"]=sec.join(" / ");
     rows.push(obj);
   }
   return {rows, mapped, unmapped};
@@ -652,32 +670,59 @@ function bulkParse(){
   bulkRows=g.rows.map(r=>({...r,_custom:true}));
   if(!bulkRows.length){ document.getElementById('bulkPreview').innerHTML=`<span class="pill warn">읽을 데이터 행이 없어요</span>`; return; }
 
-  // ── 확인 단계: 어떻게 들어가는지 표로 보여주고, 확인 후에만 저장 ──
-  const showCols=["채널명","구분","링크","릴스_견적","릴스_실비","쇼츠_견적","쇼츠_실비","틱톡_견적","틱톡_실비",
-    "미러링_견적","미러링_실비","피드_견적","피드_실비","BDC_견적","BDC_실비","기획PPL_견적","기획PPL_실비",
-    "단순PPL_견적","단순PPL_실비","소속","담당자","연락처","이메일","컨택포인트"]
-    .filter(c=>bulkRows.some(r=>r[c]));
-  const th=c=>c.replace("_견적"," 공유가").replace("_실비"," 실비");
-  const cell='padding:5px 8px; border:1px solid var(--border); white-space:nowrap; max-width:180px; overflow:hidden; text-overflow:ellipsis;';
-  const preview=bulkRows.slice(0,12);
-  const tableHtml=`<div style="overflow-x:auto; margin-top:10px; border-radius:8px;">
-    <table style="border-collapse:collapse; font-size:12px;">
-      <tr>${showCols.map(c=>`<th style="${cell} background:var(--accent-soft); position:sticky; left:auto;">${esc(th(c))}</th>`).join("")}</tr>
-      ${preview.map(r=>`<tr>${showCols.map(c=>`<td style="${cell}" title="${esc(r[c]||"")}">${esc(r[c]||"")}</td>`).join("")}</tr>`).join("")}
-    </table></div>
-    ${bulkRows.length>12?`<div class="hint" style="margin-top:5px;">…외 ${bulkRows.length-12}행 (전체 ${bulkRows.length}행 저장됨)</div>`:""}`;
-  const mapReport=`<details class="more" style="margin-top:10px;"><summary>열 인식 결과 보기 (${mapped.length}개 인식${unmapped.length?` · ${unmapped.length}개 무시`:""})</summary>
-    <div class="body">${mapped.map(([o,k])=>`「${esc(o)}」 → ${esc(th(k))}`).join("\n")}${unmapped.length?`\n\n[무시된 열]\n${unmapped.map(esc).join(", ")}`:""}</div></details>`;
+  bulkMapped=mapped; bulkUnmapped=unmapped;
+  renderBulkPreview();
+}
+
+/* ── 확인 + 직접 편집 단계 ──
+   셀 클릭=값 수정 / ✕=행 삭제 / 열 머리 드롭다운=열 이름(매핑) 변경·열 삭제 */
+let bulkMapped=[], bulkUnmapped=[];
+const BULK_FIELDS=["채널명","구분","링크",
+  ...PRICE_TYPES.flatMap(t=>[t+"_견적",t+"_실비"]),
+  "미러링채널","소속","담당자","연락처","이메일","컨택포인트","상품소개서","2차활용범위","비고"];
+function thLabel(c){ return c.replace("_견적"," 공유가").replace("_실비"," 실비"); }
+
+function renderBulkPreview(){
+  if(!bulkRows.length){ document.getElementById('bulkPreview').innerHTML=`<span class="pill warn">남은 행이 없어요</span>`; return; }
+  const cols=BULK_FIELDS.filter(c=>bulkRows.some(r=>r[c]!=null && r[c]!==""));
+  const cell='padding:4px 7px; border:1px solid var(--border); white-space:nowrap; max-width:200px; overflow:hidden; text-overflow:ellipsis; font-size:12px;';
+  const selOpts=k=>BULK_FIELDS.map(f=>`<option value="${f}"${f===k?" selected":""}>${thLabel(f)}</option>`).join("")
+    +`<option value="__DEL__">🗑 이 열 삭제</option>`;
+  const tableHtml=`<div style="overflow:auto; max-height:440px; margin-top:10px; border-radius:8px;">
+    <table style="border-collapse:collapse;">
+      <tr><th style="${cell} background:var(--card-2);"></th>${cols.map(c=>
+        `<th style="${cell} background:var(--accent-soft);">
+           <select onchange="bulkRemapCol('${c}',this.value)" title="열 이름 변경/삭제"
+             style="font:inherit; font-size:11px; font-weight:700; max-width:118px; border:0; background:transparent; color:var(--accent-ink); cursor:pointer;">
+             ${selOpts(c)}</select></th>`).join("")}</tr>
+      ${bulkRows.map((r,i)=>`<tr>
+        <td style="${cell} text-align:center;"><button onclick="bulkDelRow(${i})" title="이 행 삭제"
+          style="border:0; background:none; cursor:pointer; color:var(--bad); font-size:13px;">✕</button></td>
+        ${cols.map(c=>`<td style="${cell} cursor:text;" contenteditable spellcheck="false"
+           oninput="bulkRows[${i}]['${c}']=this.textContent.trim()">${esc(r[c]||"")}</td>`).join("")}</tr>`).join("")}
+    </table></div>`;
+  const mapReport=`<details class="more" style="margin-top:10px;"><summary>열 인식 결과 보기 (${bulkMapped.length}개 인식${bulkUnmapped.length?` · ${bulkUnmapped.length}개 무시`:""})</summary>
+    <div class="body">${bulkMapped.map(([o,k])=>`「${esc(o)}」 → ${esc(thLabel(k))}`).join("\n")}${bulkUnmapped.length?`\n\n[무시된 열]\n${bulkUnmapped.map(esc).join(", ")}`:""}</div></details>`;
 
   document.getElementById('bulkPreview').innerHTML=
     `<span class="pill good">${bulkRows.length}개 채널 인식</span>
-     <span style="font-size:12.5px; color:var(--muted);"> — 아래 표에서 값이 맞게 들어갔는지 확인한 뒤 저장하세요.</span>
+     <span style="font-size:12.5px; color:var(--muted);"> — 셀을 클릭해 바로 고칠 수 있어요. ✕=행 삭제, 열 머리글=열 이름 변경.</span>
      ${tableHtml}${mapReport}
      <div class="actions" style="margin-top:12px;">
        <button class="btn primary" onclick="bulkSave()">✓ 확인했어요, 저장 (${bulkRows.length}건)</button>
        <button class="btn ghost" onclick="bulkRows=[];document.getElementById('bulkPreview').innerHTML='';">취소</button>
        <span class="hint">같은 탭+채널명이 이미 있으면 새 값으로 교체됩니다.</span>
      </div>`;
+}
+
+function bulkDelRow(i){ bulkRows.splice(i,1); renderBulkPreview(); }
+function bulkRemapCol(oldK,newK){
+  if(newK==="__DEL__"){ bulkRows.forEach(r=>{ delete r[oldK]; }); bulkMapped=bulkMapped.filter(([o,k])=>k!==oldK); }
+  else if(newK!==oldK){
+    bulkRows.forEach(r=>{ if(r[oldK]!=null && r[oldK]!==""){ r[newK]=r[oldK]; } delete r[oldK]; });
+    bulkMapped=bulkMapped.map(([o,k])=>[o, k===oldK?newK:k]);
+  }
+  renderBulkPreview();
 }
 
 function bulkSave(){
@@ -730,7 +775,7 @@ function exportCsv(){
 let xlTerms=[];   // [{term, cands:[dataIdx...], picked:dataIdx|null|-1}]  -1 = 빈칸 확정
 let xlData=[];    // resolve 시점의 allData 스냅샷
 
-const XL_META = [["제품명","제품명"],["날짜","월"],["채널명","채널명"],["링크","채널 링크"]];
+const XL_META = [["제품명","제품명"],["날짜","월"],["채널명","채널명"],["링크","채널 링크"],["2차활용범위","2차 활용 범위"]];
 function xlNorm(s){ return String(s||"").replace(/\s+/g,"").toLowerCase(); }
 function campParts(camp){
   // "닭가슴살(7월)" -> {제품명:"닭가슴살", 날짜:"7월"}  (전각 괄호 （）도 허용)
@@ -813,6 +858,7 @@ function xlCell(ch, fields){
     else if(f==="날짜"){ if(cp.날짜) parts.push(cp.날짜); }
     else if(f==="채널명"){ parts.push(ch.채널명); }
     else if(f==="링크"){ if(ch.링크) parts.push(ch.링크); }
+    else if(f==="2차활용범위"){ if(ch["2차활용범위"]) parts.push(ch["2차활용범위"]); }
     else {
       const v=(ch[f]||"").trim();
       if(v){
