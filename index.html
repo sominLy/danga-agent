@@ -244,7 +244,11 @@
 
       <div class="fs hidden" id="xlFieldsBox">
         <h3 style="margin:0 0 4px; font-size:14px; font-weight:800;">3️⃣ 필요한 값 선택</h3>
-        <p style="margin:0 0 10px; font-size:12.5px; color:var(--muted);">선택한 값들이 한 셀에 합쳐집니다. 예: <b>습김치 7월 릴스 공유가 800만</b></p>
+        <p style="margin:0 0 10px; font-size:12.5px; color:var(--muted);">선택한 값들이 한 셀에 합쳐집니다. 예: <b>습김치 7월 릴스 공유가 800만</b> · <span style="color:var(--good);">●</span> = 선택한 채널들이 실제로 가진 값</p>
+        <div class="actions" style="margin:0 0 10px;">
+          <button class="btn ghost" onclick="xlPickAll(true)">전체 선택</button>
+          <button class="btn ghost" onclick="xlPickAll(false)">전체 해제</button>
+        </div>
         <div id="xlFieldPick" style="display:flex; flex-wrap:wrap; gap:8px 14px;"></div>
         <div class="actions" style="margin-top:14px;">
           <button class="btn primary" onclick="xlBuild()">결과 만들기</button>
@@ -780,7 +784,9 @@ function exportCsv(){
 let xlTerms=[];   // [{term, cands:[dataIdx...], picked:dataIdx|null|-1}]  -1 = 빈칸 확정
 let xlData=[];    // resolve 시점의 allData 스냅샷
 
-const XL_META = [["제품명","제품명"],["날짜","월"],["채널명","채널명"],["링크","채널 링크"],["2차활용범위","2차 활용 범위"]];
+const XL_META = [["제품명","제품명"],["날짜","월"],["채널명","채널명"],["링크","채널 링크"],
+  ["소속","소속"],["담당자","담당자"],["연락처","연락처"],["이메일","이메일"],["컨택포인트","컨택포인트"],
+  ["2차활용범위","2차 활용 범위"]];
 function xlNorm(s){ return String(s||"").replace(/\s+/g,"").toLowerCase(); }
 function campParts(camp){
   // "닭가슴살(7월)" -> {제품명:"닭가슴살", 날짜:"7월"}  (전각 괄호 （）도 허용)
@@ -846,14 +852,23 @@ function xlMaybeFields(){
 function xlRenderFields(){
   const priceFields=[];
   PRICE_TYPES.forEach(t=>{ priceFields.push([t+"_견적",t+" 공유가"],[t+"_실비",t+" 실비"]); });
-  const saved=xlSavedFields();
+  const all=XL_META.concat(priceFields);
+  // 선택된 채널들이 실제로 값을 가진 필드 = 자동 체크 대상
+  const picked=xlTerms.filter(t=>t.picked>=0).map(t=>xlData[t.picked]);
+  const hasData=k=>{
+    if(k==="제품명"||k==="날짜") return picked.some(c=>c.캠페인);
+    return picked.some(c=>c[k]!=null && String(c[k]).trim()!=="");
+  };
   document.getElementById('xlFieldPick').innerHTML =
-    XL_META.concat(priceFields).map(([k,l])=>
-      `<label class="chk"><input type="checkbox" value="${esc(k)}" ${saved.includes(k)?"checked":""}> ${esc(l)}</label>`).join("");
+    all.map(([k,l])=>{
+      const on=hasData(k);
+      return `<label class="chk" style="${on?"":"opacity:.5;"}">
+        <input type="checkbox" value="${esc(k)}" ${on?"checked":""}> ${esc(l)}${on&&k!=="제품명"&&k!=="날짜"?' <span style="color:var(--good); font-size:10px;">●</span>':""}</label>`;
+    }).join("");
 }
-function xlSavedFields(){ try{ return JSON.parse(localStorage.getItem("xl_fields")||'["제품명","날짜","릴스_견적","릴스_실비"]'); }catch(e){ return []; } }
 
 function xlSelectedFields(){ return [...document.querySelectorAll('#xlFieldPick input:checked')].map(i=>i.value); }
+function xlPickAll(on){ document.querySelectorAll('#xlFieldPick input').forEach(i=>{ i.checked=on; i.closest('label').style.opacity=on?"1":".5"; }); }
 
 function xlCell(ch, fields){
   const cp=campParts(ch.캠페인);
@@ -864,6 +879,7 @@ function xlCell(ch, fields){
     else if(f==="채널명"){ parts.push(ch.채널명); }
     else if(f==="링크"){ if(ch.링크) parts.push(ch.링크); }
     else if(f==="2차활용범위"){ if(ch["2차활용범위"]) parts.push(ch["2차활용범위"]); }
+    else if(["소속","담당자","연락처","이메일","컨택포인트"].includes(f)){ if(ch[f]) parts.push(String(ch[f]).trim()); }
     else {
       const v=(ch[f]||"").trim();
       if(v){
