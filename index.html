@@ -850,22 +850,36 @@ function xlMaybeFields(){
 }
 
 function xlRenderFields(){
-  const priceFields=[];
-  PRICE_TYPES.forEach(t=>{ priceFields.push([t+"_견적",t+" 공유가"],[t+"_실비",t+" 실비"]); });
-  const all=XL_META.concat(priceFields);
-  // 선택된 채널들이 실제로 값을 가진 필드 = 자동 체크 대상
   const picked=xlTerms.filter(t=>t.picked>=0).map(t=>xlData[t.picked]);
   const hasData=k=>{
     if(k==="제품명"||k==="날짜") return picked.some(c=>c.캠페인);
     return picked.some(c=>c[k]!=null && String(c[k]).trim()!=="");
   };
-  document.getElementById('xlFieldPick').innerHTML =
-    all.map(([k,l])=>{
+  // 4개 카테고리로 그룹핑
+  const groups=[
+    {id:"info", name:"채널 정보", fields:[["제품명","제품명"],["날짜","월"],["채널명","채널명"],["링크","채널 링크"]]},
+    {id:"contact", name:"컨택포인트", fields:[["소속","소속"],["담당자","담당자"],["연락처","연락처"],["이메일","이메일"],["컨택포인트","컨택포인트"]]},
+    {id:"quote", name:"공유가 (고객사)", fields:PRICE_TYPES.map(t=>[t+"_견적", t==="2차/공동"?"2차/공동":t+" 공유가"])},
+    {id:"price", name:"실비 (내부)", fields:PRICE_TYPES.filter(t=>t!=="2차/공동").map(t=>[t+"_실비", t+" 실비"]).concat([["2차활용범위","2차 활용 범위"],["2차/공동_실비","2차/공동 실비"]])}
+  ];
+  document.getElementById('xlFieldPick').innerHTML = groups.map(g=>{
+    const chips=g.fields.map(([k,l])=>{
       const on=hasData(k);
-      return `<label class="chk" style="${on?"":"opacity:.5;"}">
-        <input type="checkbox" value="${esc(k)}" ${on?"checked":""}> ${esc(l)}${on&&k!=="제품명"&&k!=="날짜"?' <span style="color:var(--good); font-size:10px;">●</span>':""}</label>`;
+      return `<label class="chk" data-grp="${g.id}" style="${on?"":"opacity:.5;"}">
+        <input type="checkbox" value="${esc(k)}" ${on?"checked":""} onchange="this.closest('label').style.opacity=this.checked?'1':'.5'">
+        ${esc(l)}${on?' <span style="color:var(--good); font-size:10px;">●</span>':""}</label>`;
     }).join("");
+    return `<div style="width:100%; border:1px solid var(--border); border-radius:11px; padding:12px 14px; margin-bottom:10px; background:var(--card-2);">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:9px;">
+        <span style="font-size:12.5px; font-weight:800;">${g.name}</span>
+        <button type="button" class="btn ghost" style="padding:3px 10px; font-size:11.5px;" onclick="xlGrp('${g.id}',true)">선택</button>
+        <button type="button" class="btn ghost" style="padding:3px 10px; font-size:11.5px;" onclick="xlGrp('${g.id}',false)">해제</button>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:8px 14px;">${chips}</div>
+    </div>`;
+  }).join("");
 }
+function xlGrp(id,on){ document.querySelectorAll(`#xlFieldPick label[data-grp="${id}"]`).forEach(lb=>{ const c=lb.querySelector('input'); c.checked=on; lb.style.opacity=on?"1":".5"; }); }
 
 function xlSelectedFields(){ return [...document.querySelectorAll('#xlFieldPick input:checked')].map(i=>i.value); }
 function xlPickAll(on){ document.querySelectorAll('#xlFieldPick input').forEach(i=>{ i.checked=on; i.closest('label').style.opacity=on?"1":".5"; }); }
